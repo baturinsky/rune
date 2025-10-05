@@ -1,0 +1,25 @@
+{
+  "name": "Runesmith",
+  "version": "1.0.0",
+  "description": "Runesmith",
+  "author": "@baturinsky",
+  "type": "module",
+  "scripts": {
+    "start": "yarn vite",
+    "build": "yarn vite build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "esbuild": "^0.17.14",
+    "preact": "^10.5.4",
+    "preact-router": "^3.2.1"
+  },
+  "dependencies": {
+    "howler": "^2.2.4",
+    "is-mobile": "^5.0.0",
+    "littlejsengine": "^1.14.2",
+    "vite": "^7.1.9",
+    "vite-plugin-glsl": "^1.5.3",
+    "vite-plugin-singlefile": "^2.3.0"
+  }
+}

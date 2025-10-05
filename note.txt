@@ -1,0 +1,37 @@
+Strength
+Dexterity
+Intelligence
+
+HP
+Mana
+Stamina
+
+Crit Chance
+Crit Mult - starts from 50%
+
+Speed - actions per turn
+
+Armor - reduce each enemy hit by this amount
+Shield - absorb this amount of damage
+?Image - ignore that amount of the first strikes
+
+Sorceress - Weapon, Amulet, Armor
+Knight - Weapon, Shield, Armor
+Rogue - Weapon, Weapon, Armor
+
+Piercing
+
+
+=weapon=
+Damage
+
+
+
+=Enemy=
+Per level: 1dmg, 3hp, 1armor, -1 to hero's speed, evade and critChance
+
+Speed: +(speed-elvl) speedPoints per turn. At 100 - extra turn, reset to 0
+Evade: +(evade-elvl) evadePoints per turn. At 100 - copletely evade enemy attack, reset to 0
+CritChance: +(critChance-elvl) critPoints per turn. At 100 - damage multiplied by 1 + critMult/100, reset to 0
+Shield: absorb (shield) damage total
+Armor: -(armor) to enemy damage
