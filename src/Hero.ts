@@ -1,4 +1,4 @@
-import { CoreStats, GearStats, rng1, Stats } from "./data"
+import { CoreStats, GearStats, rng1, showStats, Stats } from "./data"
 import { generateItem, Shape } from "./Shape"
 import { s } from "./ui";
 import { fmt } from "./utils";
@@ -116,6 +116,10 @@ export class Hero {
     return `${this.role} lvl ${fmt(this.lvl)}`
   }
 
+  statsString() {
+    return `${showStats(this.s)}`;
+  }
+
   equip(slot: Slot, shape: Shape) {
     if (!shape.slots.includes(slot))
       return false;
@@ -130,6 +134,7 @@ export class Hero {
     this[slot] = shape;
     shape.usedBy = this.role;
     shape.slot = slot;
+    this.calculateHeroMultiplier(shape);
     this.updateStats();
     return true;
   }
@@ -162,7 +167,7 @@ export class Hero {
         continue
       for (let k of GearStats) {
         if (item.s[k]) {
-          s[k] = (s[k] || 0) + (item.s[k] || 0)
+          s[k] = (s[k] || 0) + (item.m[k] || 0)
         }
       }
     }
@@ -171,12 +176,23 @@ export class Hero {
     this.findBestEnemy()
   }
 
-  itemStatLimit(item: Shape) {
-    let worstMult = 1;
+  calculateHeroMultiplier(item: Shape) {
+    let worstMult = 1, limitingStat = '';
     for (let stat of CoreStats) {
       let mult = Math.min(1, this.s[stat] / item.s[stat]);
-      worstMult = Math.min(mult, worstMult)
+      if (mult < worstMult) {
+        worstMult = mult;
+        limitingStat = stat;
+      }
     }
+    item.heroMultiplier = worstMult
+    item.limitingStat = limitingStat;
+    
+    item.m = Object.fromEntries(Object.entries(item.s).map(([k, v]) => [k, v * item.heroMultiplier]));
+
+    //if (item.heroMultiplier < 1)      console.log(item.s, item.m);
+
+    //console.log(worstMult, limitingStat);
     return worstMult
   }
 
@@ -192,7 +208,7 @@ export class Hero {
   }
 
 
-  emulateCombat(eLvl: number) {
+  emulateCombat(eLvl: number): [boolean, string[]] {
     let combatLog: string[] = [];
     let s = this.s, turn: number;
     let hp = s.hp,
@@ -213,13 +229,13 @@ export class Hero {
       if (!w)
         return () => { }
 
-      if (!(w.s.damage > 0)) {
+      if (!(w.m.damage > 0)) {
         return () => { }
       }
 
       let crit = 0,
         speed = 0,
-        dmg = w.s.damage * handMultiplier - eLvl / 2;
+        dmg = w.m.damage * handMultiplier - eLvl / 2;
 
       let attack = (secondAttack = false) => {
         if (!secondAttack) {
@@ -240,8 +256,8 @@ export class Hero {
           return
         }
 
-        stamina -= w.s.staminaUse;
-        mana -= w.s.manaUse
+        stamina -= w.m.staminaUse;
+        mana -= w.m.manaUse
         let cdmg = dmg;
         if (crit >= 100) {
           crit = 0;
@@ -258,13 +274,14 @@ export class Hero {
           log(`Enemy armor blocks all damage`)
 
         if (enemyBleed) {
-          log(`Enemy bleeds for ${fmt(enemyBleed - cdmg - enemyBleed)} dmg`)
+          log(`Enemy bleeds for ${fmt(enemyBleed)} dmg`)
         }
+
         enemyHP -= cdmg + enemyBleed;
         if (isNaN(enemyHP))
           debugger
-        if (w.s.bleed)
-          enemyBleed += w.s.bleed;
+        if (w.m.bleed)
+          enemyBleed += w.m.bleed;
         if (speed > 100) {
           speed = 0;
           attack(true)
@@ -309,7 +326,7 @@ export class Hero {
           hp -= thisTurnEnemyDamage;
           log(`Taking ${thisTurnEnemyDamage} dmg`)
           if (hp <= 0) {
-            log(`No hp - I flee`);
+            log(`${fmt(hp)} left. Need better defence.`);
             return [false, combatLog]
           }
         }
@@ -319,7 +336,7 @@ export class Hero {
 
     }
 
-    log("Enemy escapes")
+    log("turn limit reached, enemy escapes. Have to deal damage faster.")
     return [false, combatLog]
   }
 }

@@ -1,9 +1,11 @@
 import { Component, render } from "preact";
 import { useEffect, useState } from "preact/hooks"
 import { generateItem, Shape, XY } from "./Shape";
-import { allowedRunes, runeAlias, known, words, rng1, know } from "./data";
+import { allowedRunes, runeAlias, known, words, rng1, know, showStats, wordBonuses } from "./data";
 import { delay, hashCode, RNG } from "./utils";
 import { Hero, Role, Slot } from "./Hero";
+
+const AllSlots = ["main", "off", "body"];
 
 export let s = {
   shape: null as Shape,
@@ -70,12 +72,12 @@ export class App extends Component {
           Day: {s.day}<br />
           Funds: ${s.money}
         </td><td rowSpan={2}>
-            {s.chosen ? "" : <ShapeUI />}
+            {s.chosen ? <HeroUI /> : s.shape ? <ShapeUI /> : ""}
           </td></tr>
         <tr><td>{heroCard(s.heroes[0])}</td></tr>
         <tr><td>{heroCard(s.heroes[1])}</td><td rowSpan={2}>
           <div class="storage">
-            {s.storage.map(shape => <button class={shape == s.shape ? "current" : ""} onClick={() => update({ shape })}>{shape?.title()}{shape.usedBy ? ` (${shape.usedBy})` : ''}</button>)}
+            {s.storage.map(shape => <button class={shape == s.shape ? "current" : ""} onClick={() => update({ shape })}>{shape?.title()}{shape.usedBy ? ` (on ${shape.usedBy})` : ''}</button>)}
           </div>
         </td></tr>
         <tr><td>{heroCard(s.heroes[2])}</td></tr>
@@ -88,7 +90,7 @@ function heroCard(hero: Hero) {
   return <div class="hero-card">
     <button onClick={() => update({ chosen: hero.role })}><b>{hero.title()}</b></button>
 
-    {["main", "off", "body"].map((slot: Slot) => {
+    {AllSlots.map((slot: Slot) => {
       let shape = hero[slot];
       return <div>
         <button onClick={() => shape && update({ shape })}>{shape?.title() || "Nothing"}</button>
@@ -125,10 +127,11 @@ function updateCanvas() {
   if (c && t) {
     let b = t.getBoundingClientRect();
     //c.style.border = "solid 0.1px #0004"
-    c.width = b.width;
-    c.style.width = `${b.width}px`;
-    c.height = b.height;
-    c.style.height = `${b.height}px`;
+    let w = scale * s.shape.w, h = scale * s.shape.h;
+    c.width = w;
+    c.style.width = `${w}px`;
+    c.height = h;
+    c.style.height = `${h}px`;
     let cx = c.getContext('2d');
     for (let name in s.shape.solutions) {
       rng = RNG(hashCode(name))
@@ -147,14 +150,14 @@ function updateCanvas() {
   }
 }
 
-export async function update(data?) {
+export async function update(data?: Partial<typeof s>) {
   if (data?.shape)
     data.chosen = undefined;
 
   if (data)
     s = { ...s, ...data };
 
-  s.shape.update()
+  s.shape?.update()
   ui.setState(s)
 
   updateCanvas();
@@ -169,6 +172,37 @@ function convertToRune(r: string) {
   if (allowedRunes.includes(r) || r == "x" || r == "=")
     return r;
   return null;
+}
+
+function HeroUI() {
+  let h = s.heroes.find(h => h.role == s.chosen);
+  if (!h)
+    return ""
+  let win = h.emulateCombat(h.bestEnemy)[1]
+  let lose = h.emulateCombat(h.bestEnemy + 1)[1]
+  return <div class="hero-ui">
+    <div>
+      = {h.title()} =
+      <hr />
+      {h.statsString()}
+      {AllSlots.map(slot =>
+        h[slot] ? <p><button onClick={() => update({ shape: h[slot] })}>Edit</button>
+          <div>={h[slot].title()}=</div>
+          {h[slot].heroMultiplier != 1 ? <div>
+            All bonuses x {h[slot].heroMultiplier} because of insufficient {h[slot].limitingStat}
+          </div> : ""}
+          {showStats(h[slot].s)} </p> : ""
+      )}
+    </div>
+    <div class="combat-log">
+      <h4>Wins against lvl {h.bestEnemy} enemy</h4>
+      {win.map(t => <div>{t}</div>)}
+    </div>
+    <div class="combat-log">
+      <h4>Loses to lvl {h.bestEnemy + 1} enemy</h4>
+      {lose.map(t => <div>{t}</div>)}
+    </div>
+  </div>
 }
 
 function ShapeUI() {
@@ -220,7 +254,7 @@ function ShapeUI() {
   }
 
   return <>
-    <div class="item-stats">{s.shape.statsString()}</div>
+    <div class="item-stats">{s.shape?.statsString()} <button onClick={() => s.shape.sell()}>Sell for ${s.shape.price()}</button></div>
 
     <div class="bench">
       <div class="gtablediv">
@@ -262,7 +296,11 @@ function ShapeUI() {
       <canvas id="routes"></canvas>
       <div>
         <div class="words">{words.sort((a, b) => (a == known[a] ? a.length : 100) - (b == known[b] ? b.length : 100))
-          .map(w => <span class={`word ` + (s.shape?.solutions[w] ? `active` : ``)}>{known[w]} </span>)}</div>
+          .map(w =>
+            <div class={`word hastip ` + (s.shape?.solutions[w] ? `active` : ``)}>{known[w]}
+              <div class="tip">{showStats(wordBonuses[w])}</div>
+            </div>
+          )}</div>
       </div>
     </div >
   </>

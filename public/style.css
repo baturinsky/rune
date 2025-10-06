@@ -208,17 +208,33 @@ html {
   display: flex;
   flex-direction: row;
   align-items: start;
-  max-height: 40vw;
+  min-height: 35rem;
   position: relative;
   gap:0;
 }
 
 .words {
   font-family: Rune;
-  font-size: 2rem;
+  font-size: 1.5rem;
   text-align: center;
-  color: #0008;
+  color: #000;
   padding: 1rem;
+  display: inline-block;
+  display: flex;
+  flex-wrap: wrap;
+  max-height: 40rem;
+  overflow: hidden;
+  margin: 0;
+  margin-bottom: -10rem;
+}
+
+.word{
+  display: inline-block;
+  background: #00000010;
+}
+
+.word:nth-child(even){
+  background: #00000004;
 }
 
 .rune {
@@ -243,9 +259,6 @@ html {
   background-color: #0044;
 }
 
-.bench{
-  min-height: 40rem;
-}
 
 .runeButtons{
   position: absolute;
@@ -358,10 +371,42 @@ html {
 }
 
 .storage{
-  overflow-y: scroll;
+  overflow-y: auto;
   max-height: 42rem;
 }
 
 .can-beat{
   font-size: 1.5rem;
+}
+
+.hastip:hover .istip {
+  display: block;
+}
+
+.istip {
+  display: none;
+  background: #C8C8C8;
+  margin-left: 28px;
+  padding: 10px;
+  position: absolute;
+  z-index: 1000;
+  width: 200px;
+  height: 100px;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+.tip{
+  color: #0008;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-size: 1.5rem;
+}
+
+.hero-ui{
+  display: flex;
+}
+
+.combat-log{
+  min-width: 30rem;
+  overflow: auto;
+  max-height: 40rem;
 }

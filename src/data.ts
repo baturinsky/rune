@@ -1,5 +1,5 @@
 import { type Slot } from "./Hero";
-import { fixed2, randomListElement, RNG } from "./utils";
+import { fixed2, fmt, randomListElement, RNG } from "./utils";
 
 export type Stats = {
   str: number,
@@ -26,7 +26,7 @@ export type Stats = {
 }
 
 export const GearStats = ["hp", "stamina", "mana", "armor", "evade", "regen"],
-  AttackStats = ["damage", "critChance", "critMult", "speed", "bleed", "offHandDamage", "firstStrike"],
+  AttackStats = ["damage", "critChance", "critMult", "speed", "bleed", "firstStrike"],
   TaxStats = ["staminaUse", "manaUse"],
   CoreStats = ["str", "int", "dex"];
 
@@ -36,7 +36,7 @@ export const runeAlias = { n: 'h', ' ': 'x', '#': 'x', '⨯': 'x', 'q': 'o' }
 
 export let rng1 = RNG(1);
 
-export function seed(v:number){
+export function seed(v: number) {
   rng1 = RNG(v)
 }
 
@@ -138,10 +138,10 @@ export let wordBonuses = Object.fromEntries(words.map((v) => [v, generateWordBon
 export function generateWordBonus(len: number, forWeapon?: boolean) {
   forWeapon ??= rng1() < .5;
   let name = randomListElement(forWeapon && rng1() < .7 ? AttackStats : GearStats, rng1);
-  
-  if(!statsConfig[name])
+
+  if (!statsConfig[name])
     console.log(name);
-  let value = fixed2((len ** 1.5) * (rng1() * .8 + .4) * .05) * (statsConfig[name].mult||1);
+  let value = fixed2((len ** 1.5) * (rng1() * .8 + .4) * .05) * (statsConfig[name].mult || 1);
   let results = { [name]: value };
   return results;
 }
@@ -155,12 +155,12 @@ export let known = Object.fromEntries(words.map(v => {
   }
 }))
 
-export function know(data){
+export function know(data) {
   known = data;
 }
 
 
-export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats: Partial<Stats>, randomBonus?:number } } = {
+export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats: Partial<Stats>, randomBonus?: number } } = {
   sword: {
     slots: ["main", "off"],
     stats: {
@@ -279,7 +279,7 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
 ##.##
 .###.
 `}, robe: {
-    slots: ["body"],    
+    slots: ["body"],
     randomBonus: 1,
     stats: {
       str: 1,
@@ -365,3 +365,12 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
 
 //for (let k in rawShapes)
 //shapes[k] = new Shape(k, { ...rawShapes[k] })
+
+export function showStats(data) {
+  let s = [];
+  for (let k in data) {
+    if (data[k])
+      s.push(`${k}: ${fmt(data[k])}`)
+  }
+  return s.join(" | ");
+}

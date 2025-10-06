@@ -1,4 +1,4 @@
-import { allowedRunes, generateWordBonus, known, rawShapes, rng1, wordBonuses, words } from "./data";
+import { allowedRunes, generateWordBonus, known, rawShapes, rng1, showStats, wordBonuses, words } from "./data";
 import { Stats } from "./data";
 import { byRole, Role, Slot } from "./Hero";
 import { s, saveState, ui, update } from "./ui";
@@ -49,12 +49,16 @@ export class Shape {
   solutions: { [name: string]: XY[] } = {}
   activated: { [name: string]: XY[] } = {}
   s: Partial<Stats> = {}
+  /**panalised stats */
+  m: Partial<Stats> = {}
   level: number
   warp = 0
   slots: Slot[]
   usedBy: Role
   slot: Slot
   foundBy: Role
+  heroMultiplier: number
+  limitingStat: string
 
   title() {
     return `${capital(this.name)}${this.pluses() ? "+" + this.pluses() : ""} lvl ${fmt(this.level)}`;
@@ -181,6 +185,21 @@ export class Shape {
           let bonus = wordBonuses[k];
           addStat(this.s, bonus, this.level);
           this.warp++;
+
+          for (let l of k) {
+            for (let k in known) {
+              if (known[k] != k) {
+                [...k].forEach((ll, i) => {
+                  if (ll == l && rng1() < .005) {
+                    let chars = [...known[k]];
+                    chars[i] = l;
+                    known[k] = chars.join('');
+                  }
+                })
+              }
+            }
+          }
+
         }
       }
       this.activated = solutions;
@@ -191,12 +210,7 @@ export class Shape {
   }
 
   statsString() {
-    let s = [];
-    for (let k in this.s) {
-      if (this.s[k])
-        s.push(`${k}: ${fmt(this.s[k])}`)
-    }
-    return `=${this.title()}= Carving cost: $${this.carveCost()} | ${this.foundBy?`Found by ${this.foundBy} | `:""} ${s.join(" | ")}`
+    return `=${this.title()}= Carving cost: $${this.carveCost()} | ${this.foundBy ? `Found by ${this.foundBy} | ` : ""} ${showStats(this.s)}`
   }
 
   carveCost() {
@@ -208,11 +222,12 @@ export class Shape {
       alert("Too expensive!")
       return;
     }
-    update({ money: s.money - this.carveCost() })
+    update({ money: s.money - this.carveCost(), day: s.day + 1 })
     for (let h of s.heroes) {
       h.doDay();
     }
-    this.current[pos[1]][pos[0]] = this.project[pos[1]][pos[0]];
+    let l = this.project[pos[1]][pos[0]];
+    this.current[pos[1]][pos[0]] = l;
     this.warp++;
     saveState("a")
   }
@@ -233,6 +248,15 @@ export class Shape {
         return [pos, ...solution];
     }
     return false;
+  }
+
+  sell() {
+    s.storage = s.storage.filter(shape => shape != this);
+    update({ money: s.money + this.price(), shape: s.shape == this ? null : s.shape })
+  }
+
+  price() {
+    return ~~(this.level + 1)
   }
 
 }
