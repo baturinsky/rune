@@ -258,7 +258,9 @@ function ShapeUI() {
   }
 
   return <>
-    <div class="item-stats">{s.shape?.statsString()} <button onClick={() => s.shape.sell()}>Sell for ${s.shape.price()}</button></div>
+    <div class="item-stats">{s.shape?.statsString()}
+      {s.shape.usedBy ? ` (on ${s.shape.usedBy})` : ''}
+      <button onClick={() => s.shape.sell()}>Sell for ${s.shape.price()}</button></div>
 
     <div class="bench">
       <div class="gtablediv">

@@ -246,7 +246,7 @@ export class Hero {
 
         let staminaUse = w.s.staminaUse || 0, manaUse = w.s.manaUse || 0;
 
-        if (stamina <staminaUse) {
+        if (stamina < staminaUse) {
           if (stamina > 0)
             log("Out of Stamina")
           return
@@ -261,7 +261,7 @@ export class Hero {
         stamina -= staminaUse;
         mana -= manaUse
         let cdmg = dmg;
-        
+
         if (crit >= 100) {
           crit = 0;
           cdmg *= (1.5 + s.critMult / 100);
@@ -271,7 +271,7 @@ export class Hero {
           cdmg *= 1 + s.firstStrike / 100;
         }
 
-        if (cdmg>0)
+        if (cdmg > 0)
           log(`Dealing ${fmt(cdmg)} damage`)
         else
           log(`Enemy armor blocks all damage`)
@@ -283,7 +283,7 @@ export class Hero {
         enemyHP -= cdmg + enemyBleed;
         if (isNaN(enemyHP))
           debugger
-        if (w.m.bleed && cdmg>0)
+        if (w.m.bleed && cdmg > 0)
           enemyBleed += w.m.bleed;
         if (speed > 100) {
           speed = 0;
@@ -312,9 +312,9 @@ export class Hero {
         return [true, combatLog]
       }
 
-      if(this.s.regen){
+      if (this.s.regen) {
         log(`Regen ${fmt(s.regen)} hp`)
-        hp += this.s.regen;
+        hp = Math.min(hp + this.s.regen, s.hp);
       }
 
       evade += s.evade - eLvl;
@@ -326,7 +326,7 @@ export class Hero {
         if (manaShield > 0) {
           let absorbed = Math.min(manaShield, thisTurnEnemyDamage);
           if (absorbed > 0) {
-            log(`Mana shield ${fmt(manaShield)} -> ${fmt(manaShield-absorbed)}`)
+            log(`Mana shield ${fmt(manaShield)} -> ${fmt(manaShield - absorbed)}`)
             manaShield -= absorbed;
             thisTurnEnemyDamage -= absorbed;
           }
