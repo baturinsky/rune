@@ -168,6 +168,8 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
       int: 1,
       dex: 1,
       damage: 1,
+      manaUse: 0,
+      staminaUse: 1
     },
     shape: `
 ..#..
@@ -197,7 +199,9 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
       dex: 2,
       damage: .8,
       critChance: 1.5,
-      critMult: 1.5
+      critMult: 1.5,
+      manaUse: 0,
+      staminaUse: 0.5
     },
     shape: `
 ....#.
@@ -227,6 +231,7 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
       str: 1,
       dex: 1,
       damage: 1,
+      staminaUse: 0,
       manaUse: 1,
       int: 2
     },
@@ -244,6 +249,7 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
       dex: 1,
       int: 2,
       damage: 1,
+      staminaUse: 0,
       manaUse: 1
     },
     shape: `
@@ -312,7 +318,8 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
       int: 1,
       dex: 2,
       armor: .1,
-      evade: 1
+      evade: 1,
+      speed: 1
     },
     shape: `
 ..###
@@ -338,7 +345,9 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
       int: 1,
       dex: 1,
       str: 2,
-      firstStrike: 1
+      firstStrike: 1,
+      staminaUse: 2,
+      manaUse: 0
     },
     shape: `
 ######

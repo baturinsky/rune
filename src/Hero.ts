@@ -256,8 +256,8 @@ export class Hero {
           return
         }
 
-        stamina -= w.m.staminaUse;
-        mana -= w.m.manaUse
+        stamina -= w.s.staminaUse;
+        mana -= w.s.manaUse
         let cdmg = dmg;
         if (crit >= 100) {
           crit = 0;
@@ -332,7 +332,7 @@ export class Hero {
         }
       }
 
-      log(`Me: ${fmt(hp)} hp Enemy: ${fmt(enemyHP)} hp`)
+      log(`Me: ${fmt(hp)} hp | Enemy: ${fmt(enemyHP)} hp | Mana: ${fmt(mana)} | Stamina: ${fmt(stamina)}`)
 
     }
 
