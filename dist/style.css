@@ -410,3 +410,7 @@ html {
   overflow: auto;
   max-height: 40rem;
 }
+
+.take{
+  min-width: 2rem;
+}

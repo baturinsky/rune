@@ -155,7 +155,7 @@ export function generateWordBonus(len: number, forWeapon?: boolean) {
 
   if (!statsConfig[name])
     console.log(name);
-  let value = fixed2((len ** 1.5) * (rng1() * .8 + .4) * .2 * (statsConfig[name].mul || 1));
+  let value = fixed2((len ** 1.5) * (rng1() * .8 + .4) * .15 * (statsConfig[name].mul || 1));
   let results = { [name]: value };
   return results;
 }

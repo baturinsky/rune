@@ -346,7 +346,7 @@ export class Hero {
 
     }
 
-    log("turn limit reached, enemy escapes. Have to deal damage faster.")
+    log("Turn limit reached, enemy escapes. Have to deal damage faster.")
     return [false, combatLog]
   }
 }
