@@ -538,3 +538,9 @@ export function applyWithPath(original, changesList, inplace = false, combineAll
 export function deepCopy(a){
   return JSON.parse(JSON.stringify(a));
 }
+
+export function fixed2(n:number){
+  return ~~(n*100)/100;
+}
+
+export let fmt = (n:number) => n && n.toFixed(2).replace(/(.00)/g, "")

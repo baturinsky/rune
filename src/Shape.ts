@@ -1,7 +1,8 @@
-import { allowedRunes, known, words } from "./data";
-import { Stats } from "./Hero";
-import { ui } from "./ui";
-import { deepCopy, hashCode, randomListElement, RNG } from "./utils";
+import { allowedRunes, generateWordBonus, known, rawShapes, rng1, wordBonuses, words } from "./data";
+import { Stats } from "./data";
+import { byRole, Role, Slot } from "./Hero";
+import { s, ui, update } from "./ui";
+import { capital, debounce, deepCopy, fmt, hashCode, randomListElement, RNG } from "./utils";
 
 const neighborsDeltas = [[1, 0], [-1, 0], [0, 1], [0, -1]] as XY[]
 
@@ -17,7 +18,27 @@ export function same(a: XY, b: XY) {
   return a[0] == b[0] && a[1] == b[1]
 }
 
+export function addStat(a, b, m = 1) {
+  for (let k in b)
+    a[k] = (a[k] || 0) + b[k] * m;
+}
+
 export type XY = [number, number];
+
+export function generateItem(level: number, rng, kind?) {
+  kind ??= randomListElement(Object.keys(rawShapes), rng);
+  let raw = rawShapes[kind];
+  let shape = new Shape(kind, { ...raw, skipChance: .1, letterChance: .2 })
+  for (let k in raw.stats) {
+    shape.s[k] = ~~(raw.stats[k] * level);
+  }
+  let bonus = generateWordBonus(rng(2) + 3, shape.s.damage > 0);
+  addStat(shape.s, bonus, level);
+  shape.level = level;
+  shape.update();
+  s.storage.push(shape)
+  return shape;
+}
 
 export class Shape {
   w: number;
@@ -25,21 +46,58 @@ export class Shape {
   current: string[][];
   project: string[][];
   solutions: { [name: string]: XY[] } = {}
-  s:Stats
+  activated: { [name: string]: XY[] } = {}
+  s: Partial<Stats> = {}
+  level: number
+  warp = 0
+  slots: Slot[]
+  usedBy: Role
+  slot: Slot
 
-  title(){
-    return this.name;
+  title() {
+    return `${capital(this.name)}${this.pluses() ? "+" + this.pluses() : ""} lvl ${this.level}`;
   }
 
-  constructor(public name: string, data: { shape: string, skipChance?: number, letterChance?: number }) {
+  pluses() {
+    return Object.keys(this.activated).length;
+  }
+
+  save() {
+    return {
+      level: this.level,
+      warp: this.warp,
+      name: this.name,
+      slot: this.slot,
+      usedBy: this.usedBy,
+      s: this.s,
+      current: this.current.map(l => l.join('')).join("\n"),
+      project: this.project.map(l => l.join('')).join("\n"),
+    }
+  }
+
+  static load(data) {
+    let shape = generateItem(data.level, rng1, data.name)
+    Object.assign(shape, data)
+    shape.current = data.current.split("\n").map(l => [...l])
+    shape.project = data.project.split("\n").map(l => [...l])
+    if (shape.usedBy) {
+      let hero = byRole(shape.usedBy);
+      hero.equip(data.slot, shape);
+    }
+    shape.update()
+    return shape;
+  }
+
+  constructor(public name: string, data: { shape: string, skipChance?: number, letterChance?: number, slots?: Slot[] }) {
     let raw = data.shape.trim();
     let lines = raw.split("\n");
     this.w = lines[0].length;
     this.h = lines.length
     this.current = lines.map(l => [...l]);
+    this.slots = data.slots;
 
     if (data.skipChance || data.letterChance) {
-      let rng = RNG(Math.random())
+      let rng = RNG(rng1())
       this.eachCell(p => {
         if (this.current[p[1]][p[0]] == ".")
           return
@@ -51,15 +109,19 @@ export class Shape {
       })
     }
     this.project = deepCopy(this.current);
+    this.solve();
+    this.warp = 0;
+  }
+
+  leveledCopy() {
+
   }
 
   toString() {
     return this.current.join("\n")
   }
 
-  copy() {
-    return new Shape(this.name, { shape: this.toString() })
-  }
+  //copy() {    return new Shape(this.name, { shape: this.toString() })  }
 
   eachCell(cb: (p: XY) => boolean | void) {
     for (let col = 0; col < this.w; col++) {
@@ -87,27 +149,66 @@ export class Shape {
     (this.current[pos[1]] || [])[pos[0]] = v;
   }
 
-  solve(ww: string[] = words) {
+  update() {
+    this.solve(true);
+    this.solve(false);
+  }
+
+  solve(inCurrent: boolean = false) {
     let solutions: { [name: string]: XY[] } = {}
-    for (let w of ww) {
+    for (let w of words) {
       this.eachCell(p => {
-        let solution = this.solveStarting(p, w, known[w] != w, []);
+        let solution = this.solveStarting(p, w, inCurrent || known[w] != w, []);
         if (solution) {
           solutions[w] = solution;
           return true
         }
       })
     }
-    this.solutions = solutions;
-    for(let k in solutions){
-      if(known[k] != k){
+    for (let k in solutions) {
+      if (known[k] != k) {
         known[k] = k;
         console.log("Found new word: " + k);
-        ui.forceUpdate()
+        ui?.forceUpdate()
       }
     }
+    if (inCurrent) {
+      for (let k in solutions) {
+        if (!this.activated[k]) {
+          let bonus = wordBonuses[k];
+          addStat(this.s, bonus, this.level);
+          this.warp++;
+        }
+      }
+      this.activated = solutions;
+    } else {
+      this.solutions = solutions;
+    }
+    return solutions
   }
 
+  statsString() {
+    let s = [];
+    for (let k in this.s) {
+      if (this.s[k])
+        s.push(`${k}: ${fmt(this.s[k])}`)
+    }
+    return `=${this.title()}= Carving cost: $${this.carveCost()} | ${s.join(" | ")}`
+  }
+
+  carveCost() {
+    return 2 ** this.warp
+  }
+
+  carve(pos: XY) {
+    if (s.money < this.carveCost()) {
+      alert("Too expensive!")
+      return;
+    }
+    update({ money: s.money - this.carveCost() })
+    this.current[pos[1]][pos[0]] = this.project[pos[1]][pos[0]];
+    this.warp++;
+  }
 
   solveStarting(pos: XY, text: string, inCurrent: boolean, taken: XY[]) {
     let runeHere = inCurrent ? this.c(pos) : this.p(pos);

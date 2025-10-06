@@ -1,15 +1,49 @@
 import { Component, render } from "preact";
 import { useEffect, useState } from "preact/hooks"
-import { Shape, XY } from "./Shape";
-import { allowedRunes, runeAlias, known, words } from "./data";
+import { generateItem, Shape, XY } from "./Shape";
+import { allowedRunes, runeAlias, known, words, rng1, know } from "./data";
 import { delay, hashCode, RNG } from "./utils";
+import { Hero, Role, Slot } from "./Hero";
 
-let s = {
+export let s = {
   shape: null as Shape,
+  heroes: [] as Hero[],
   runeButton: null as string,
   edited: [-1, 0] as [number, number],
   hovered: [-1, 0] as [number, number],
-  known: null
+  storage: [] as Shape[],
+  money: 100,
+  chosen: null as Role,
+  day: 1
+}
+
+export function saveState() {
+  let data = { money: s.money, day: s.day } as any;
+  data.heroes = s.heroes.map(h => ({lvl:h.lvl}))
+  data.storage = s.storage.map(item => item.save())
+  data.known = known;
+  data.shape = s.storage.indexOf(s.shape);
+  data.chosen = s.chosen;
+  localStorage["runesmith"] = JSON.stringify(data);
+}
+
+export function loadState() {
+  let ls = localStorage["runesmith"];
+  if(!ls){
+    alert("No saves");
+    return;
+  }
+  let data = JSON.parse(ls);
+  for(let i in data.heroes){
+    s.heroes[i].lvl = data.heroes[i].lvl;
+  }
+  s.money = data.money;
+  s.day = data.day;
+  know(data.known);
+  s.storage = data.storage.map(d => Shape.load(d));s
+  s.shape = s.storage[data.shape];
+  s.chosen = data.chosen;
+  update()
 }
 
 export let ui: App;
@@ -22,38 +56,80 @@ export class App extends Component {
   render() {
     return <table class="main">
       <thead>
-        <tr><td colSpan={2}>Header</td></tr>
+        <tr><td colSpan={2}>
+          <button onClick={() => saveState()}>Save</button>
+          <button onClick={() => loadState()}>Load</button>
+        </td></tr>
       </thead>
       <tbody>
-        <tr><td>Workbench</td><td rowSpan={2}><ShapeUI /></td></tr>
-        <tr><td>Knight</td></tr>
-        <tr><td>Wizard</td><td rowSpan={2}>Items</td></tr>
-        <tr><td>Rogue</td></tr>
+        <tr><td>
+          Day: {s.day}<br />
+          Funds: ${s.money}
+        </td><td rowSpan={2}>
+            {s.chosen ? "" : <ShapeUI />}
+          </td></tr>
+        <tr><td>{heroCard(s.heroes[0])}</td></tr>
+        <tr><td>{heroCard(s.heroes[1])}</td><td rowSpan={2}>
+          <div class="storage">
+            {s.storage.map(shape => <button class={shape == s.shape ? "current" : ""} onClick={() => update({ shape })}>{shape?.title()}{shape.usedBy ? ` (${shape.usedBy})` : ''}</button>)}
+          </div>
+        </td></tr>
+        <tr><td>{heroCard(s.heroes[2])}</td></tr>
       </tbody>
     </table>
   }
 }
 
-function update() {
-  s.shape.solve()
+function heroCard(hero: Hero) {
+  return <div class="hero-card">
+    <button onClick={() => update({ chosen: hero.role })}><b>{hero.title()}</b></button>
+    <div class="can-beat"> Can beat lvl {hero.bestEnemy} </div>
+    {["main", "off", "body"].map((slot: Slot) => {
+      let shape = hero[slot];
+      return <div>
+        <button onClick={() => shape && update({ shape })}>{shape?.title() || "Nothing"}</button>
+        {s.shape?.slots.includes(slot) && s.shape != shape &&
+          <button onClick={() => {
+            if (s.shape) {
+              let ok = hero.equip(slot, s.shape)
+              if (!ok)
+                alert("wrong slot")
+              update();
+            }
+          }}> &lt; </button>}
+      </div>
+    }
+    )}
+  </div>
+}
+
+function updateCanvas() {
   let c = document.getElementById("routes") as HTMLCanvasElement, t = document.getElementById("gtable")
-  let rem = c.width / s.shape.w;
+  let pr = document.querySelector(".project-rune");
+
+  if (!s.shape || !c || !t || !pr)
+    return;
+
+  
+
+  let scale = pr.getBoundingClientRect().width;
+  console.log("uc", c.height, s.shape.h);
 
   let rng;
 
-  let canvasPos = (p: XY) => [(p[0] + .3 + rng() * .5) * rem, (p[1] + .3 + rng() * .4) * rem] as XY;
+  let canvasPos = (p: XY) => [(p[0] + .4 + rng() * .3) * scale, (p[1] + .4 + rng() * .3) * scale] as XY;
 
   if (c && t) {
     let b = t.getBoundingClientRect();
-    c.style.border = "solid 0.1px #0004"
+    //c.style.border = "solid 0.1px #0004"
     c.width = b.width;
     c.style.width = `${b.width}px`;
     c.height = b.height;
     c.style.height = `${b.height}px`;
     let cx = c.getContext('2d');
-    cx.lineWidth = rem * .05;
     for (let name in s.shape.solutions) {
       rng = RNG(hashCode(name))
+      cx.lineWidth = scale * .05 * (s.shape.activated[name] ? 2 : .7);
       cx.strokeStyle = `hsl(${rng(360)} 80% 60% / 0.7)`
       let sol = s.shape.solutions[name];
       let p = canvasPos(sol[0]);
@@ -66,7 +142,19 @@ function update() {
       cx.stroke()
     }
   }
+}
+
+export async function update(data?) {
+  if (data?.shape)
+    data.chosen = undefined;
+
+  if (data)
+    s = { ...s, ...data };
+
+  s.shape.update()
   ui.setState(s)
+
+  updateCanvas();
 }
 
 function convertToRune(r: string) {
@@ -88,7 +176,7 @@ function ShapeUI() {
 
   useEffect(() => {
     let eli = (e: KeyboardEvent) => {
-      if (e.code == "Space" || e.code == "Equal"|| e.code == "Enter" || e.code.includes("Key") || e.code.includes("Digit") || e.code.includes("Numpad")) {
+      if (e.code == "Space" || e.code == "Equal" || e.code == "Enter" || e.code.includes("Key") || e.code.includes("Digit") || e.code.includes("Numpad")) {
         let r = [...e.code].pop();
         if (e.code == "Space")
           r = " ";
@@ -119,8 +207,7 @@ function ShapeUI() {
     if (r != "=") {
       s.shape.project[pos[1]][pos[0]] = r;
     } else {
-      s.shape.current[pos[1]][pos[0]] = s.shape.project[pos[1]][pos[0]];
-      console.log("carved");
+      s.shape.carve(pos);
     }
     update()
   }
@@ -130,51 +217,59 @@ function ShapeUI() {
     return <div class={"project-rune" + (current != r ? " changing" : "")}>{r == "#" ? "•" : r}</div>
   }
 
-  return <div class="bench">
-    <table id="gtable"><tbody>
-      {s.shape.project.map((l, row) => <tr>
-        {l.map((r, col) => <td>
-          <div class={"rune "
-            + (col == s.edited[0] && row == s.edited[1] ? "current" : "")
-          }
+  return <>
+    <div class="item-stats">{s.shape.statsString()}</div>
 
-            style={{ visibility: r != "." ? "visible" : "hidden" }}
-            onMouseDown={e => {
-              if (e.shiftKey) {
-                applyRune([col, row], "x")
-              } else {
-                applyRune([col, row], s.runeButton)
+    <div class="bench">
+      <div class="gtablediv">
+        <table id="gtable"><tbody>
+          {s.shape.project.map((l, row) => <tr>
+            {l.map((r, col) => <td>
+              <div class={"rune "
+                + (col == s.edited[0] && row == s.edited[1] ? "current" : "")
               }
-            }}
-            onMouseMove={e => {
-              s.hovered = [col, row]
-              focus()
-              update()
-            }}
-            onMouseLeave={e => {
-              s.hovered = [...s.edited]
-              update()
-            }}
-          >{cu([col, row], r)}</div>
-        </td>)}
-      </tr>)}
-      <tr><td colSpan={7} style={{ textAlign: "center" }}>
-        <div class="runeButtons">
-          {[...allowedRunes, '⨯', '='].map((r, i) => <button class={s.runeButton == r ? "active" : ""} onClick={e => {
-            clickRuneButton(r);
-          }}> {r == '=' ? '𓍋' : r}<div class="tip">{!allowedRunes.includes(r) ? r : `${r}/${i + 1}`}</div></button>)}
-        </div>
-      </td></tr>
-    </tbody></table>
-    <canvas id="routes"></canvas>
-    <div class="words">{words.sort((a,b)=>(a==known[a]?a.length:100) - (b==known[b]?b.length:100))
-    .map(w => <span class={`word ` + (s.shape?.solutions[w] ? `active` : ``)}>{known[w]} </span>)}</div>
-  </div>
+
+                style={{ visibility: r != "." ? "visible" : "hidden" }}
+                onMouseDown={e => {
+                  if (e.shiftKey) {
+                    applyRune([col, row], "=")
+                  } else {
+                    applyRune([col, row], s.runeButton)
+                  }
+                }}
+                onMouseMove={e => {
+                  s.hovered = [col, row]
+                  focus()
+                  update()
+                }}
+                onMouseLeave={e => {
+                  s.hovered = [...s.edited]
+                  update()
+                }}
+              >{cu([col, row], r)}</div>
+            </td>)}
+          </tr>)}
+        </tbody></table>
+      </div>
+      <div class="runeButtons">
+        {[...allowedRunes, '⨯', '='].map((r, i) => <button class={s.runeButton == r ? "active" : ""} onClick={e => {
+          clickRuneButton(r);
+        }}> {r == '=' ? '𓍋' : r}<div class="tip">{!allowedRunes.includes(r) ? r : `${r}/${i + 1}`}</div></button>)}
+      </div>
+
+      <canvas id="routes"></canvas>
+      <div>
+        <div class="words">{words.sort((a, b) => (a == known[a] ? a.length : 100) - (b == known[b] ? b.length : 100))
+          .map(w => <span class={`word ` + (s.shape?.solutions[w] ? `active` : ``)}>{known[w]} </span>)}</div>
+      </div>
+    </div >
+  </>
 }
 
-export function initUI(shape: Shape) {
+export function initUI(shape: Shape, heroes) {
   s.shape = shape;
-  shape.solve();
+  s.heroes = heroes
+  shape.update();
   render(<App />, document.body)
 }
 
