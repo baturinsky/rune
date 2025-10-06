@@ -108,7 +108,7 @@ export class Hero {
       let item = generateItem(this.bestEnemy, rng1)
       item.foundBy = this.role;
     }
-    let xp = Math.min(0.1, (this.bestEnemy ** 2 / (this.lvl + 1) ** 2.5) * .1);
+    let xp = Math.min(1, (this.bestEnemy ** 2 / (this.lvl + 1) ** 2.5) * .5);
     this.lvl += xp;
   }
 
