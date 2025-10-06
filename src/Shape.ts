@@ -1,7 +1,7 @@
 import { allowedRunes, generateWordBonus, known, rawShapes, rng1, wordBonuses, words } from "./data";
 import { Stats } from "./data";
 import { byRole, Role, Slot } from "./Hero";
-import { s, ui, update } from "./ui";
+import { s, saveState, ui, update } from "./ui";
 import { capital, debounce, deepCopy, fmt, hashCode, randomListElement, RNG } from "./utils";
 
 const neighborsDeltas = [[1, 0], [-1, 0], [0, 1], [0, -1]] as XY[]
@@ -26,6 +26,7 @@ export function addStat(a, b, m = 1) {
 export type XY = [number, number];
 
 export function generateItem(level: number, rng, kind?) {
+  level = ~~level;
   kind ??= randomListElement(Object.keys(rawShapes), rng);
   let raw = rawShapes[kind];
   let shape = new Shape(kind, { ...raw, skipChance: .1, letterChance: .2 })
@@ -53,9 +54,10 @@ export class Shape {
   slots: Slot[]
   usedBy: Role
   slot: Slot
+  foundBy: Role
 
   title() {
-    return `${capital(this.name)}${this.pluses() ? "+" + this.pluses() : ""} lvl ${this.level}`;
+    return `${capital(this.name)}${this.pluses() ? "+" + this.pluses() : ""} lvl ${fmt(this.level)}`;
   }
 
   pluses() {
@@ -69,6 +71,7 @@ export class Shape {
       name: this.name,
       slot: this.slot,
       usedBy: this.usedBy,
+      foundBy: this.foundBy,
       s: this.s,
       current: this.current.map(l => l.join('')).join("\n"),
       project: this.project.map(l => l.join('')).join("\n"),
@@ -193,7 +196,7 @@ export class Shape {
       if (this.s[k])
         s.push(`${k}: ${fmt(this.s[k])}`)
     }
-    return `=${this.title()}= Carving cost: $${this.carveCost()} | ${s.join(" | ")}`
+    return `=${this.title()}= Carving cost: $${this.carveCost()} | ${this.foundBy?`Found by ${this.foundBy} | `:""} ${s.join(" | ")}`
   }
 
   carveCost() {
@@ -206,8 +209,12 @@ export class Shape {
       return;
     }
     update({ money: s.money - this.carveCost() })
+    for (let h of s.heroes) {
+      h.doDay();
+    }
     this.current[pos[1]][pos[0]] = this.project[pos[1]][pos[0]];
     this.warp++;
+    saveState("a")
   }
 
   solveStarting(pos: XY, text: string, inCurrent: boolean, taken: XY[]) {

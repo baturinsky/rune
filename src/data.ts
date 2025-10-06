@@ -1,3 +1,4 @@
+import { type Slot } from "./Hero";
 import { fixed2, randomListElement, RNG } from "./utils";
 
 export type Stats = {
@@ -159,7 +160,7 @@ export function know(data){
 }
 
 
-export const rawShapes: { [name: string]: { slots: string[], shape: string, stats: Partial<Stats>, randomBonus?:number } } = {
+export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats: Partial<Stats>, randomBonus?:number } } = {
   sword: {
     slots: ["main", "off"],
     stats: {

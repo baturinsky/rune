@@ -1,4 +1,4 @@
-import { GearStats, rng1, Stats } from "./data"
+import { CoreStats, GearStats, rng1, Stats } from "./data"
 import { generateItem, Shape } from "./Shape"
 import { s } from "./ui";
 import { fmt } from "./utils";
@@ -103,8 +103,17 @@ export class Hero {
     this.updateStats(this.lvl)
   }
 
+  doDay() {
+    if (rng1() < .3) {
+      let item = generateItem(this.bestEnemy, rng1)
+      item.foundBy = this.role;
+    }
+    let xp = Math.min(0.1, (this.bestEnemy ** 2 / (this.lvl + 1) ** 2.5) * .1);
+    this.lvl += xp;
+  }
+
   title() {
-    return `${this.role} lvl ${this.lvl}`
+    return `${this.role} lvl ${fmt(this.lvl)}`
   }
 
   equip(slot: Slot, shape: Shape) {
@@ -158,8 +167,17 @@ export class Hero {
       }
     }
     this.s = s;
-    
+
     this.findBestEnemy()
+  }
+
+  itemStatLimit(item: Shape) {
+    let worstMult = 1;
+    for (let stat of CoreStats) {
+      let mult = Math.min(1, this.s[stat] / item.s[stat]);
+      worstMult = Math.min(mult, worstMult)
+    }
+    return worstMult
   }
 
   findBestEnemy() {
@@ -170,7 +188,7 @@ export class Hero {
         this.bestEnemy = i - 1;
         return [i - 1, attempt[1]];
       }
-    }    
+    }
   }
 
 

@@ -17,30 +17,30 @@ export let s = {
   day: 1
 }
 
-export function saveState() {
+export function saveState(slot) {
   let data = { money: s.money, day: s.day } as any;
-  data.heroes = s.heroes.map(h => ({lvl:h.lvl}))
+  data.heroes = s.heroes.map(h => ({ lvl: h.lvl }))
   data.storage = s.storage.map(item => item.save())
   data.known = known;
   data.shape = s.storage.indexOf(s.shape);
   data.chosen = s.chosen;
-  localStorage["runesmith"] = JSON.stringify(data);
+  localStorage["runesmith" + slot] = JSON.stringify(data);
 }
 
-export function loadState() {
-  let ls = localStorage["runesmith"];
-  if(!ls){
-    alert("No saves");
+export function loadState(slot) {
+  let ls = localStorage["runesmith" + slot];
+  if (!ls) {
+    alert("No save in slot " + slot);
     return;
   }
   let data = JSON.parse(ls);
-  for(let i in data.heroes){
+  for (let i in data.heroes) {
     s.heroes[i].lvl = data.heroes[i].lvl;
   }
   s.money = data.money;
   s.day = data.day;
   know(data.known);
-  s.storage = data.storage.map(d => Shape.load(d));s
+  s.storage = data.storage.map(d => Shape.load(d)); s
   s.shape = s.storage[data.shape];
   s.chosen = data.chosen;
   update()
@@ -57,8 +57,12 @@ export class App extends Component {
     return <table class="main">
       <thead>
         <tr><td colSpan={2}>
-          <button onClick={() => saveState()}>Save</button>
-          <button onClick={() => loadState()}>Load</button>
+          {[1, 2, 3].map(slot => <>
+            <button onClick={() => saveState(slot)}>Save {slot}</button>
+            <button onClick={() => loadState(slot)}>Load {slot}</button>
+          </>
+          )}
+          <button onClick={() => loadState("a")}>Load Autosave</button>
         </td></tr>
       </thead>
       <tbody>
@@ -83,7 +87,7 @@ export class App extends Component {
 function heroCard(hero: Hero) {
   return <div class="hero-card">
     <button onClick={() => update({ chosen: hero.role })}><b>{hero.title()}</b></button>
-    <div class="can-beat"> Can beat lvl {hero.bestEnemy} </div>
+
     {["main", "off", "body"].map((slot: Slot) => {
       let shape = hero[slot];
       return <div>
@@ -98,8 +102,9 @@ function heroCard(hero: Hero) {
             }
           }}> &lt; </button>}
       </div>
-    }
-    )}
+
+    })}
+    <div class="can-beat"> Can beat lvl {hero.bestEnemy} </div>
   </div>
 }
 
@@ -109,8 +114,6 @@ function updateCanvas() {
 
   if (!s.shape || !c || !t || !pr)
     return;
-
-  
 
   let scale = pr.getBoundingClientRect().width;
   console.log("uc", c.height, s.shape.h);
@@ -192,7 +195,6 @@ function ShapeUI() {
   }, []);
 
   function applyRune(pos: XY, r: string) {
-
     if (!r || !pos || pos[0] < 0)
       return;
     let current = s.shape.current[pos[1]][pos[0]];
