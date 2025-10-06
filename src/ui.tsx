@@ -118,7 +118,7 @@ function updateCanvas() {
     return;
 
   let scale = pr.getBoundingClientRect().width;
-  console.log("uc", c.height, s.shape.h);
+  //console.log("uc", c.height, s.shape.h);
 
   let rng;
 

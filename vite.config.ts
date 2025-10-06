@@ -7,7 +7,7 @@ export default defineConfig(({ command, mode, isSsrBuild, isPreview }) => {
   return {
     plugins: [
       glsl({ minify: true }),
-      //viteSingleFile({removeViteModuleLoader:true}),      
+      viteSingleFile({removeViteModuleLoader:true}), 
     ],
     base: '',
     define: {
