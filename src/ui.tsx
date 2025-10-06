@@ -1,8 +1,8 @@
 import { Component, render } from "preact";
 import { useEffect, useState } from "preact/hooks"
 import { generateItem, Shape, XY } from "./Shape";
-import { allowedRunes, runeAlias, known, words, rng1, know, showStats, wordBonuses } from "./data";
-import { delay, hashCode, RNG } from "./utils";
+import { allowedRunes, runeAlias, known, words, rng1, know, showStats, wordBonuses, showStats2 } from "./data";
+import { delay, fmt, hashCode, RNG } from "./utils";
 import { Hero, Role, Slot } from "./Hero";
 
 const AllSlots = ["main", "off", "body"];
@@ -122,7 +122,7 @@ function updateCanvas() {
 
   let rng;
 
-  let canvasPos = (p: XY) => [(p[0] + .4 + rng() * .3) * scale, (p[1] + .4 + rng() * .3) * scale] as XY;
+  let canvasPos = (p: XY) => [(p[0] + .7 + rng() * .3) * scale, (p[1] + .5 + rng() * .3) * scale] as XY;
 
   if (c && t) {
     let b = t.getBoundingClientRect();
@@ -186,12 +186,12 @@ function HeroUI() {
       <hr />
       {h.statsString()}
       {AllSlots.map(slot =>
-        h[slot] ? <p><button onClick={() => update({ shape: h[slot] })}>Edit</button>
-          <div>={h[slot].title()}=</div>
+        h[slot] ? <p>
+          <div>={h[slot].title()}=<button onClick={() => update({ shape: h[slot] })}>Edit</button></div>
           {h[slot].heroMultiplier != 1 ? <div>
-            All bonuses x {h[slot].heroMultiplier} because of insufficient {h[slot].limitingStat}
+            All bonuses x {fmt(h[slot].heroMultiplier)} because of insufficient {h[slot].limitingStat}
           </div> : ""}
-          {showStats(h[slot].s)} </p> : ""
+          {showStats2( h[slot].m, h[slot].s)} </p> : ""
       )}
     </div>
     <div class="combat-log">

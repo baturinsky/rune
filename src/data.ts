@@ -65,7 +65,8 @@ export const statsConfig = {
   },
 
   critChance: {
-    tip: "Hero gains +(critChance-enemyLevel) critPoints per turn. At 100 - damage multiplied by 1 + critMult/100, reset to 0"
+    tip: "Hero gains +(critChance-enemyLevel) critPoints per turn. At 100 - damage multiplied by 1 + critMult/100, reset to 0",
+    mul: 2
   },
 
   critMult: {
@@ -83,11 +84,13 @@ export const statsConfig = {
   },
 
   speed: {
-    tip: "+(speed-elvl) speedPoints per turn. At 100 - extra turn, reset to 0"
+    tip: "+(speed-elvl) speedPoints per turn. At 100 - extra turn, reset to 0",
+    mul: 3
   },
 
   evade: {
-    tip: "+(evade-elvl) evadePoints per turn. At 100 - copletely evade enemy attack, reset to 0"
+    tip: "+(evade-elvl) evadePoints per turn. At 100 - copletely evade enemy attack, reset to 0",
+    mul: 3
   },
 
   bleed: {
@@ -117,11 +120,11 @@ function generateWords() {
   let words: string[] = []
   for (let i = 0; i < 100; i++) {
     let s = "";
-    for (let j = 0; j < 10; j++) {
+    for (let j = 0; j < 7; j++) {
       let r = allowedRunes[rng1(9)];
       if (r != [...s].pop())
         s += r;
-      if (j > 3 && !rng1(3))
+      if (j > 2 && rng1()<.6)
         break
     }
     words.push(s);
@@ -286,12 +289,12 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
 .###.
 `}, robe: {
     slots: ["body"],
-    randomBonus: 1,
     stats: {
       str: 1,
       dex: 1,
       int: 2,
-      armor: .2
+      armor: .2,
+      manaShield: 3
     },
     shape: `
 .###.
@@ -318,7 +321,7 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
       int: 1,
       dex: 2,
       armor: .1,
-      evade: 1,
+      evade: 2,
       speed: 1
     },
     shape: `
@@ -360,7 +363,7 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
       str: 1,
       int: 2,
       dex: 1,
-      manaShield: 1
+      manaShield: 3
     },
     shape: `
 ...#...
@@ -380,6 +383,15 @@ export function showStats(data) {
   for (let k in data) {
     if (data[k])
       s.push(`${k}: ${fmt(data[k])}`)
+  }
+  return s.join(" | ");
+}
+
+export function showStats2(data, data2) {
+  let s = [];
+  for (let k in data) {
+    if (data[k])
+      s.push(`${k}: ${fmt(data[k])}/${fmt(data2[k])}`)
   }
   return s.join(" | ");
 }

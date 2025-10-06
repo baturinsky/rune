@@ -1,6 +1,6 @@
 import { allowedRunes, generateWordBonus, known, rawShapes, rng1, showStats, wordBonuses, words } from "./data";
 import { Stats } from "./data";
-import { byRole, Role, Slot } from "./Hero";
+import { byRole, initStats, Role, Slot } from "./Hero";
 import { s, saveState, ui, update } from "./ui";
 import { capital, debounce, deepCopy, fmt, hashCode, randomListElement, RNG } from "./utils";
 
@@ -30,6 +30,7 @@ export function generateItem(level: number, rng, kind?) {
   kind ??= randomListElement(Object.keys(rawShapes), rng);
   let raw = rawShapes[kind];
   let shape = new Shape(kind, { ...raw, skipChance: .1, letterChance: .2 })
+  shape.s = { ...initStats(), ...shape.s };
   for (let k in raw.stats) {
     shape.s[k] = ~~(raw.stats[k] * level);
   }
@@ -251,8 +252,9 @@ export class Shape {
   }
 
   sell() {
+    let ind = s.storage.indexOf(this);
     s.storage = s.storage.filter(shape => shape != this);
-    update({ money: s.money + this.price(), shape: s.shape == this ? null : s.shape })
+    update({ money: s.money + this.price(), shape: s.shape == this ? (ind>1?s.storage[ind-1]:null) : s.shape })
   }
 
   price() {

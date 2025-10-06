@@ -187,7 +187,7 @@ export class Hero {
     }
     item.heroMultiplier = worstMult
     item.limitingStat = limitingStat;
-    
+
     item.m = Object.fromEntries(Object.entries(item.s).map(([k, v]) => [k, v * item.heroMultiplier]));
 
     //if (item.heroMultiplier < 1)      console.log(item.s, item.m);
@@ -244,20 +244,22 @@ export class Hero {
 
         crit += s.critChance + 10 - eLvl;
 
-        if (stamina < w.s.staminaUse) {
+        let staminaUse = w.s.staminaUse || 0, manaUse = w.s.manaUse || 0;
+
+        if (stamina <staminaUse) {
           if (stamina > 0)
             log("Out of Stamina")
           return
         }
 
-        if (mana <= w.s.manaUse) {
+        if (mana <= manaUse) {
           if (mana > 0)
             log("Out of Mana")
           return
         }
 
-        stamina -= w.s.staminaUse;
-        mana -= w.s.manaUse
+        stamina -= staminaUse;
+        mana -= manaUse
         let cdmg = dmg;
         if (crit >= 100) {
           crit = 0;
@@ -297,6 +299,7 @@ export class Hero {
       if (hp <= 0 || enemyHP <= 0)
         return;
 
+      log('|')
       log(`= Turn ${turn} =`)
 
       ww[0]();
@@ -305,6 +308,11 @@ export class Hero {
       if (enemyHP <= 0) {
         log(`Victory`);
         return [true, combatLog]
+      }
+
+      if(this.s.regen){
+        log(`Regen ${fmt(s.regen)} hp`)
+        hp += this.s.regen;
       }
 
       evade += s.evade - eLvl;
@@ -324,7 +332,7 @@ export class Hero {
         thisTurnEnemyDamage -= s.armor;
         if (thisTurnEnemyDamage > 0) {
           hp -= thisTurnEnemyDamage;
-          log(`Taking ${thisTurnEnemyDamage} dmg`)
+          log(`Taking ${fmt(thisTurnEnemyDamage)} dmg`)
           if (hp <= 0) {
             log(`${fmt(hp)} left. Need better defence.`);
             return [false, combatLog]
