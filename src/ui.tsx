@@ -77,7 +77,9 @@ export class App extends Component {
         <tr><td>{heroCard(s.heroes[0])}</td></tr>
         <tr><td>{heroCard(s.heroes[1])}</td><td rowSpan={2}>
           <div class="storage">
-            {s.storage.map(shape => <button class={shape == s.shape ? "current" : ""} onClick={() => update({ shape })}>{shape?.title()}{shape.usedBy ? ` (on ${shape.usedBy})` : ''}</button>)}
+            {s.storage.map(shape => <button class={shape == s.shape ? "current" : ""} 
+            onClick={() => update({ shape })}>{shape?.title()} {shape.usedBy ? 
+            ` (on ${shape.usedBy})` : ''}</button>)}
           </div>
         </td></tr>
         <tr><td>{heroCard(s.heroes[2])}</td></tr>
@@ -88,14 +90,17 @@ export class App extends Component {
 
 function heroCard(hero: Hero) {
   return <div class="hero-card">
-    <button onClick={() => update({ chosen: hero.role })}><b>{hero.title()}</b></button>
+    <button onClick={() => update({ chosen: hero.role })}>
+      <b>{hero.title()}</b>
+      <div class="can-beat">Can beat lvl {hero.bestEnemy}</div>
+      </button>
 
     {AllSlots.map((slot: Slot) => {
       let shape = hero[slot];
       return <div>
-        <button onClick={() => shape && update({ shape })}>{shape?.title() || "Nothing"}</button>
+        <button onClick={() => shape && update({ shape })}>{shape?.title() || "Nothing"} {shape?.heroMultiplier<1?`⨯${`${fmt(shape?.heroMultiplier)}`.substring(1,10)}`:''}</button>
         {s.shape?.slots.includes(slot) && s.shape != shape &&
-          <button onClick={() => {
+          <button class="take" onClick={() => {
             if (s.shape) {
               let ok = hero.equip(slot, s.shape)
               if (!ok)
@@ -106,7 +111,6 @@ function heroCard(hero: Hero) {
       </div>
 
     })}
-    <div class="can-beat"> Can beat lvl {hero.bestEnemy} </div>
   </div>
 }
 

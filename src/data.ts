@@ -25,7 +25,7 @@ export type Stats = {
   firstStrike: number
 }
 
-export const GearStats = ["hp", "stamina", "mana", "armor", "evade", "regen"],
+export const GearStats = ["hp", "stamina", "mana", "armor", "evade", "regen", "manaShield"],
   AttackStats = ["damage", "critChance", "critMult", "speed", "bleed", "firstStrike"],
   TaxStats = ["staminaUse", "manaUse"],
   CoreStats = ["str", "int", "dex"];
@@ -40,7 +40,7 @@ export function seed(v: number) {
   rng1 = RNG(v)
 }
 
-export const statsConfig = {
+export const statsConfig: { [id: string]: { tip: string, mul?: number } } = {
   str: {
     tip: "Affect item scaling"
   },
@@ -53,15 +53,15 @@ export const statsConfig = {
 
   hp: {
     tip: "Fight is over when it is 0",
-    mult: 3
+    mul: 3
   },
   stamina: {
     tip: "Used by some weapons",
-    mult: 3
+    mul: 3
   },
   mana: {
     tip: "Used by some weapons",
-    mult: 3
+    mul: 3
   },
 
   critChance: {
@@ -75,27 +75,27 @@ export const statsConfig = {
 
   armor: {
     tip: "-(armor) to enemy damage",
-    mult: .3
+    mul: .3
   },
 
   manaShield: {
     tip: "absorb (manShield) damage total",
-    mult: 3
+    mul: 5
   },
 
   speed: {
     tip: "+(speed-elvl) speedPoints per turn. At 100 - extra turn, reset to 0",
-    mul: 3
+    mul: 5
   },
 
   evade: {
     tip: "+(evade-elvl) evadePoints per turn. At 100 - copletely evade enemy attack, reset to 0",
-    mul: 3
+    mul: 5
   },
 
   bleed: {
     tip: "enemy gains +(bleed-elvl) bleedPoints, if it was hit this turn. Enemy lose bleedPoint hp each turn.",
-    mult: .3
+    mul: .2
   },
 
   regen: {
@@ -112,9 +112,20 @@ export const statsConfig = {
 
   damage: {
     tip: "base damage to enemy"
+  },
+
+  staminaUse: {
+    tip: "Stamina used per strike"
+  },
+
+  manaUse: {
+    tip: "Mana used per strike"
   }
 
+
 }
+
+const statsOrder = Object.keys(statsConfig)
 
 function generateWords() {
   let words: string[] = []
@@ -124,7 +135,7 @@ function generateWords() {
       let r = allowedRunes[rng1(9)];
       if (r != [...s].pop())
         s += r;
-      if (j > 2 && rng1()<.6)
+      if (j > 2 && rng1() < .6)
         break
     }
     words.push(s);
@@ -144,7 +155,7 @@ export function generateWordBonus(len: number, forWeapon?: boolean) {
 
   if (!statsConfig[name])
     console.log(name);
-  let value = fixed2((len ** 1.5) * (rng1() * .8 + .4) * .05) * (statsConfig[name].mult || 1);
+  let value = fixed2((len ** 1.5) * (rng1() * .8 + .4) * .2 * (statsConfig[name].mul || 1));
   let results = { [name]: value };
   return results;
 }
@@ -170,7 +181,7 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
       str: 1,
       int: 1,
       dex: 1,
-      damage: 1,
+      damage: 1.2,
       manaUse: 0,
       staminaUse: 1
     },
@@ -200,11 +211,11 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
       str: 1,
       int: 1,
       dex: 2,
-      damage: .8,
-      critChance: 1.5,
+      damage: 1,
+      critChance: 2,
       critMult: 1.5,
       manaUse: 0,
-      staminaUse: 0.5
+      staminaUse: 0.3
     },
     shape: `
 ....#.
@@ -253,7 +264,8 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
       int: 2,
       damage: 1,
       staminaUse: 0,
-      manaUse: 1
+      manaUse: .5,
+      speed: 3
     },
     shape: `
 .###.
@@ -380,7 +392,7 @@ export const rawShapes: { [name: string]: { slots: Slot[], shape: string, stats:
 
 export function showStats(data) {
   let s = [];
-  for (let k in data) {
+  for (let k in { ...statsConfig, ...data }) {
     if (data[k])
       s.push(`${k}: ${fmt(data[k])}`)
   }
@@ -389,7 +401,7 @@ export function showStats(data) {
 
 export function showStats2(data, data2) {
   let s = [];
-  for (let k in data) {
+  for (let k in { ...statsConfig, ...data }) {
     if (data[k])
       s.push(`${k}: ${fmt(data[k])}/${fmt(data2[k])}`)
   }

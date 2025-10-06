@@ -52,28 +52,28 @@ export type Slot = "main" | "off" | "body";
 
 const RoleStats = {
   Knight: {
+    str: 2,
+    int: 1.2,
+    dex: 1.2,
     hp: 1.2,
-    str: 1.5,
-    int: 1,
-    dex: 1,
     stamina: 1.5,
     mana: 1,
     offHandDamage: .7
   },
   Wizard: {
     hp: 1,
-    str: 1,
-    int: 1.5,
-    dex: 1,
+    str: 1.2,
+    int: 2,
+    dex: 1.2,
     stamina: 1,
-    mana: 1.5,
+    mana: 2,
     offHandDamage: .7
   },
   Rogue: {
     hp: 1,
-    str: 1,
-    int: 1,
-    dex: 1.5,
+    str: 1.2,
+    int: 1.2,
+    dex: 2,
     stamina: 1,
     mana: 1,
     offHandDamage: 1
@@ -239,10 +239,10 @@ export class Hero {
 
       let attack = (secondAttack = false) => {
         if (!secondAttack) {
-          speed += s.speed - eLvl;
+          speed += w.m.speed - eLvl;
         }
 
-        crit += s.critChance + 10 - eLvl;
+        crit += w.m.critChance + 10 - eLvl;
 
         let staminaUse = w.s.staminaUse || 0, manaUse = w.s.manaUse || 0;
 
@@ -261,6 +261,7 @@ export class Hero {
         stamina -= staminaUse;
         mana -= manaUse
         let cdmg = dmg;
+        
         if (crit >= 100) {
           crit = 0;
           cdmg *= (1.5 + s.critMult / 100);
@@ -270,7 +271,7 @@ export class Hero {
           cdmg *= 1 + s.firstStrike / 100;
         }
 
-        if (cdmg)
+        if (cdmg>0)
           log(`Dealing ${fmt(cdmg)} damage`)
         else
           log(`Enemy armor blocks all damage`)
@@ -282,10 +283,11 @@ export class Hero {
         enemyHP -= cdmg + enemyBleed;
         if (isNaN(enemyHP))
           debugger
-        if (w.m.bleed)
+        if (w.m.bleed && cdmg>0)
           enemyBleed += w.m.bleed;
         if (speed > 100) {
           speed = 0;
+          log("EXTRA STRIKE!")
           attack(true)
         }
       }
@@ -294,12 +296,12 @@ export class Hero {
 
     let ww = [createAttackFunction(this.main, 1), createAttackFunction(this.off, this.s.offHandDamage)];
 
-    for (turn = 1; turn <= 10; turn++) {
+    for (turn = 1; turn <= 20; turn++) {
 
       if (hp <= 0 || enemyHP <= 0)
         return;
 
-      log('|')
+      log('⠀')
       log(`= Turn ${turn} =`)
 
       ww[0]();
@@ -318,13 +320,13 @@ export class Hero {
       evade += s.evade - eLvl;
       if (evade >= 100) {
         evade = 0
-        log("Evading all damage")
+        log("EVADE!")
       } else {
         let thisTurnEnemyDamage = enemyDamage;
         if (manaShield > 0) {
           let absorbed = Math.min(manaShield, thisTurnEnemyDamage);
           if (absorbed > 0) {
-            log(`Mana shield blocks ${absorbed} dmg`)
+            log(`Mana shield ${fmt(manaShield)} -> ${fmt(manaShield-absorbed)}`)
             manaShield -= absorbed;
             thisTurnEnemyDamage -= absorbed;
           }
@@ -334,13 +336,13 @@ export class Hero {
           hp -= thisTurnEnemyDamage;
           log(`Taking ${fmt(thisTurnEnemyDamage)} dmg`)
           if (hp <= 0) {
-            log(`${fmt(hp)} left. Need better defence.`);
+            log(`${fmt(hp)} hp left. Need better defence.`);
             return [false, combatLog]
           }
         }
       }
 
-      log(`Me: ${fmt(hp)} hp | Enemy: ${fmt(enemyHP)} hp | Mana: ${fmt(mana)} | Stamina: ${fmt(stamina)}`)
+      log(`Me: ${fmt(hp)} hp | Enemy: ${fmt(enemyHP)} hp`/* | Mana: ${fmt(mana)} | Stamina: ${fmt(stamina)}`*/)
 
     }
 

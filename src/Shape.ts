@@ -62,7 +62,7 @@ export class Shape {
   limitingStat: string
 
   title() {
-    return `${capital(this.name)}${this.pluses() ? "+" + this.pluses() : ""} lvl ${fmt(this.level)}`;
+    return `${capital(this.name)}${this.pluses() ? "+" + this.pluses() : ""} ${fmt(this.level)}`;
   }
 
   pluses() {
@@ -77,6 +77,7 @@ export class Shape {
       slot: this.slot,
       usedBy: this.usedBy,
       foundBy: this.foundBy,
+      activated: this.activated,
       s: this.s,
       current: this.current.map(l => l.join('')).join("\n"),
       project: this.project.map(l => l.join('')).join("\n"),
@@ -93,6 +94,7 @@ export class Shape {
       hero.equip(data.slot, shape);
     }
     shape.update()
+    shape.s = data.s;
     return shape;
   }
 
